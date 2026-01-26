@@ -1,0 +1,49 @@
+# --- Laravel Core ---
+/vendor/
+node_modules/
+.env
+.env.backup
+.env.production
+composer.lock
+package-lock.json
+user.passwd.yml
+
+# --- Storage & Logs ---
+/storage/*.key
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Se sua API aceita uploads, ignore-os mas mantenha a pasta
+!/storage/app/public/.gitignore
+
+# --- Testing & Coverage ---
+.phpunit.result.cache
+/tests/Feature/data/*
+/tests/Unit/data/*
+.php_cs.cache
+.php_cs.dist
+/.phpunit.cache
+/tests/coverage/
+
+# --- IDE & OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- Docker & Environment ---
+.docker/
+docker-compose.override.yml
+.phpunit.result.cache
+
+# --- API Specifics ---
+# Se estiver usando Swagger/L5-Swagger para documentação automática
+/storage/api-docs/
+
+Docs/*
+Prompts/*
+laravel_temp_1769212757/*
