@@ -21,8 +21,7 @@ services:
       - DB_PASSWORD=postgres
     expose:
       - "9000"
-
-  # Servidor Web Nginx
+      
   nginx:
     image: nginx:alpine
     container_name: boss_pods_nginx
@@ -37,7 +36,6 @@ services:
     depends_on:
       - app
 
-  # Banco de Dados PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: boss_pods_postgres
