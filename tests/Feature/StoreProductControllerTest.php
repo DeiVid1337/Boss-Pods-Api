@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Models\SellerInventory;
 use App\Models\Store;
 use App\Models\StoreProduct;
 use App\Models\User;
@@ -13,6 +14,72 @@ use Tests\TestCase;
 
 class StoreProductControllerTest extends TestCase
 {
+    public function test_get_store_products_with_seller_id_as_admin_includes_seller_quantity(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $store = Store::factory()->create();
+        $seller = User::factory()->create(['role' => 'seller', 'store_id' => $store->id]);
+        $otherSeller = User::factory()->create(['role' => 'seller', 'store_id' => $store->id]);
+
+        $product1 = Product::factory()->create();
+        $product2 = Product::factory()->create();
+
+        $storeProduct1 = StoreProduct::factory()->create([
+            'store_id' => $store->id,
+            'product_id' => $product1->id,
+            'stock_quantity' => 100,
+        ]);
+        $storeProduct2 = StoreProduct::factory()->create([
+            'store_id' => $store->id,
+            'product_id' => $product2->id,
+            'stock_quantity' => 50,
+        ]);
+
+        SellerInventory::factory()->create([
+            'user_id' => $seller->id,
+            'store_product_id' => $storeProduct1->id,
+            'quantity' => 7,
+        ]);
+        SellerInventory::factory()->create([
+            'user_id' => $otherSeller->id,
+            'store_product_id' => $storeProduct1->id,
+            'quantity' => 5,
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $response = $this->getJson("/api/v1/stores/{$store->id}/products?seller_id={$seller->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'store_id', 'product_id', 'stock_quantity', 'available_quantity', 'seller_quantity'],
+                ],
+                'meta',
+            ]);
+
+        $data = collect($response->json('data'))->keyBy('id');
+        $this->assertEquals(7, $data[$storeProduct1->id]['seller_quantity']);
+        $this->assertEquals(88, $data[$storeProduct1->id]['available_quantity']);
+        $this->assertEquals(0, $data[$storeProduct2->id]['seller_quantity']);
+        $this->assertEquals(50, $data[$storeProduct2->id]['available_quantity']);
+    }
+
+    public function test_get_store_products_with_seller_id_as_manager_requires_seller_in_same_store(): void
+    {
+        $store = Store::factory()->create();
+        $otherStore = Store::factory()->create();
+        $manager = User::factory()->create(['role' => 'manager', 'store_id' => $store->id]);
+        $sellerOtherStore = User::factory()->create(['role' => 'seller', 'store_id' => $otherStore->id]);
+
+        Sanctum::actingAs($manager);
+
+        $response = $this->getJson("/api/v1/stores/{$store->id}/products?seller_id={$sellerOtherStore->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('errors.seller_id.0', 'The selected seller must belong to this store.');
+    }
+
     public function test_get_store_products_as_admin_returns_paginated_list(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

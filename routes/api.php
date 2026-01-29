@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\SaleController;
+use App\Http\Controllers\Api\V1\SellerInventoryController;
 use App\Http\Controllers\Api\V1\StoreController;
 use App\Http\Controllers\Api\V1\StoreProductController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -35,6 +36,10 @@ Route::prefix('v1')->group(function () {
             Route::put('/products/{storeProduct}', [StoreProductController::class, 'update']);
             Route::delete('/products/{storeProduct}', [StoreProductController::class, 'destroy']);
 
+            Route::post('/inventory/withdraw', [SellerInventoryController::class, 'withdraw']);
+            Route::post('/inventory/return', [SellerInventoryController::class, 'return']);
+            Route::get('/sellers/inventory', [SellerInventoryController::class, 'indexForStore']);
+
             Route::get('/sales', [SaleController::class, 'index']);
             Route::post('/sales', [SaleController::class, 'store']);
             Route::get('/sales/{sale}', [SaleController::class, 'show']);
@@ -52,5 +57,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/users/{user}', [UserController::class, 'show']);
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        Route::get('/users/{user}/inventory', [SellerInventoryController::class, 'index']);
     });
 });

@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Store;
 use App\Models\StoreProduct;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -14,11 +15,19 @@ use RuntimeException;
 class StoreProductService
 {
 
-    public function list(Store $store, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function list(Store $store, array $filters = [], int $perPage = 15, ?User $seller = null): LengthAwarePaginator
     {
         $query = StoreProduct::query()
             ->where('store_products.store_id', $store->id)
             ->with('product');
+
+        $query->withSum('sellerInventories as seller_inventories_sum_quantity', 'quantity');
+
+        if ($seller) {
+            $query->with(['sellerInventories' => function ($q) use ($seller) {
+                $q->where('user_id', $seller->id);
+            }]);
+        }
 
         if (isset($filters['search']) && !empty($filters['search'])) {
             $search = $filters['search'];
@@ -70,11 +79,20 @@ class StoreProductService
     }
 
 
-    public function find(Store $store, int $id): ?StoreProduct
+    public function find(Store $store, int $id, ?User $seller = null): ?StoreProduct
     {
-        return StoreProduct::where('store_id', $store->id)
-            ->with('product')
-            ->find($id);
+        $query = StoreProduct::where('store_id', $store->id)
+            ->with('product');
+
+        $query->withSum('sellerInventories as seller_inventories_sum_quantity', 'quantity');
+
+        if ($seller) {
+            $query->with(['sellerInventories' => function ($q) use ($seller) {
+                $q->where('user_id', $seller->id);
+            }]);
+        }
+
+        return $query->find($id);
     }
 
 

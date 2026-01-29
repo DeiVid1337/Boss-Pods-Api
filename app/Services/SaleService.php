@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SellerInventory;
 use App\Models\Store;
 use App\Models\StoreProduct;
 use App\Models\User;
@@ -76,7 +77,7 @@ class SaleService
         $customerId = $data['customer_id'] ?? null;
         $notes = $data['notes'] ?? null;
 
-        $this->validateStockAndOwnership($store, $items);
+        $this->validateStockAndOwnership($store, $user, $items);
 
         return DB::transaction(function () use ($store, $user, $items, $customerId, $notes) {
             $totalAmount = 0;
@@ -118,6 +119,21 @@ class SaleService
                 ]);
 
                 $itemData['store_product']->decrementStock($itemData['quantity']);
+
+                if ($user->isSeller()) {
+                    $sellerInventory = SellerInventory::where('user_id', $user->id)
+                        ->where('store_product_id', $itemData['store_product']->id)
+                        ->first();
+
+                    if ($sellerInventory) {
+                        $sellerInventory->quantity = max(0, $sellerInventory->quantity - $itemData['quantity']);
+                        if ($sellerInventory->quantity === 0) {
+                            $sellerInventory->delete();
+                        } else {
+                            $sellerInventory->save();
+                        }
+                    }
+                }
             }
 
             if ($customerId) {
@@ -132,7 +148,7 @@ class SaleService
     }
 
 
-    private function validateStockAndOwnership(Store $store, array $items): void
+    private function validateStockAndOwnership(Store $store, User $user, array $items): void
     {
         $errors = [];
         $aggregated = [];
@@ -167,11 +183,26 @@ class SaleService
 
         foreach ($aggregated as $storeProductId => $totalQuantity) {
             $storeProduct = StoreProduct::find($storeProductId);
-            if (!$storeProduct->hasStock($totalQuantity)) {
-                $idx = $firstIndexByProduct[$storeProductId];
-                $errors["items.{$idx}.quantity"] = [
-                    "Insufficient stock. Available: {$storeProduct->stock_quantity}, Requested (total for this product): {$totalQuantity}.",
-                ];
+
+            if ($user->isSeller()) {
+                $sellerInventory = SellerInventory::where('user_id', $user->id)
+                    ->where('store_product_id', $storeProductId)
+                    ->first();
+
+                if (!$sellerInventory || $sellerInventory->quantity < $totalQuantity) {
+                    $available = $sellerInventory ? $sellerInventory->quantity : 0;
+                    $idx = $firstIndexByProduct[$storeProductId];
+                    $errors["items.{$idx}.quantity"] = [
+                        "Insufficient quantity in seller inventory. Available: {$available}, Requested (total for this product): {$totalQuantity}.",
+                    ];
+                }
+            } else {
+                if (!$storeProduct->hasStock($totalQuantity)) {
+                    $idx = $firstIndexByProduct[$storeProductId];
+                    $errors["items.{$idx}.quantity"] = [
+                        "Insufficient stock. Available: {$storeProduct->stock_quantity}, Requested (total for this product): {$totalQuantity}.",
+                    ];
+                }
             }
         }
 

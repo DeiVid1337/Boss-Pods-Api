@@ -49,6 +49,11 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class);
     }
 
+    public function sellerInventories(): HasMany
+    {
+        return $this->hasMany(SellerInventory::class);
+    }
+
     public function scopeAdmins($query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('role', 'admin');

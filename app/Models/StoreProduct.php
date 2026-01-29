@@ -48,6 +48,19 @@ class StoreProduct extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    public function sellerInventories(): HasMany
+    {
+        return $this->hasMany(SellerInventory::class);
+    }
+
+    public function getAvailableQuantityAttribute(): int
+    {
+        $sellerQuantity = $this->getAttribute('seller_inventories_sum_quantity');
+        if ($sellerQuantity === null) {
+            $sellerQuantity = $this->sellerInventories()->sum('quantity');
+        }
+        return max(0, $this->stock_quantity - (int) $sellerQuantity);
+    }
 
     public function scopeLowStock($query): \Illuminate\Database\Eloquent\Builder
     {
