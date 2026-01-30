@@ -56,5 +56,5 @@ USER www
 # Expor porta 8000 (Railway usa variável PORT)
 EXPOSE 8000
 
-# Comando padrão para docker-compose (nginx usa php-fpm na porta 9000)
-CMD ["php-fpm"]
+# Comando padrão: sobe Laravel em HTTP na PORT (Railway). Local: docker-compose sobrescreve com php-fpm
+CMD ["sh", "railway/start.sh"]
