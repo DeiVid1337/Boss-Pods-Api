@@ -24,7 +24,11 @@ O script `railway/start.sh` (executado pelo CMD do Dockerfile) faz:
 
 Assim o app escuta HTTP na porta que a Railway usa. **Não é necessário** configurar Start Command no dashboard; se tiver definido algo diferente, remova para usar o padrão da imagem.
 
-### 1.2 CORS no .env
+### 1.2 Banco (Postgres na Railway)
+
+A API usa **DATABASE_URL** ou **DB_URL** na Railway. O `config/database.php` faz o parse dessa URL de forma segura (host, port, database, user, password) para evitar o erro *"invalid integer value for connection option port"*. Pode manter a variável **DATABASE_URL** que a Railway injeta ao vincular o serviço Postgres; não é obrigatório definir DB_HOST, DB_PORT, etc. à mão.
+
+### 1.3 CORS no .env
 
 No **.env da API** em produção, defina a origem do frontend:
 
@@ -74,7 +78,23 @@ e use essa variável em todas as chamadas à API.
 - [ ] Frontend: base URL da API apontando para a URL pública do Railway (não `railway.internal`).
 - [ ] Depois de mudar .env na API: `php artisan config:clear` (o `railway/start.sh` já roda `config:cache` no deploy).
 
-## 4. Se ainda falhar
+## 4. Se ainda der 502 (serviço não responde)
+
+O CORS está certo na Railway; o 502 indica que **nada está escutando na porta** que o proxy usa. Confira:
+
+1. **Start Command na Railway**  
+   Dashboard → seu serviço da API → **Settings** → **Deploy** → **Start Command**:
+   - **Deixe em branco** (para usar o comando padrão da imagem: `sh railway/start.sh`), **ou**
+   - Defina exatamente: `sh railway/start.sh`  
+   Se estiver algo como `php-fpm` ou outro comando, **apague** e salve.
+
+2. **Logs do deploy**  
+   Em **Deployments** → último deploy → **View logs**. Verifique se o container sobe com o script e se aparece algo como o Laravel escutando na porta (ex.: `Listening on http://0.0.0.0:XXXX`). Se o script falhar (migrate, config, etc.), o processo para e o proxy devolve 502.
+
+3. **Redeploy**  
+   Depois de alterar o Start Command ou de garantir que a imagem usada é a do último push, faça **Redeploy** (Deployments → ⋮ → Redeploy) para subir de novo com a configuração correta.
+
+## 5. Se ainda falhar (CORS / rede)
 
 1. Abra o DevTools → **Network** e veja a requisição que falha (POST ou OPTIONS).
 2. Confira a **URL** da requisição: deve ser a do Railway, não do Vercel.

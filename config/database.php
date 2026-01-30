@@ -2,6 +2,37 @@
 
 use Illuminate\Support\Str;
 
+/**
+ * Parse DATABASE_URL/DB_URL safely for PostgreSQL (evita "invalid integer value" para port no Railway).
+ * Retorna array com host, port, database, username, password ou null se não usar URL.
+ */
+$pgsqlFromUrl = function (): ?array {
+    $url = env('DATABASE_URL') ?: env('DB_URL');
+    if (empty($url) || ! is_string($url)) {
+        return null;
+    }
+    $parsed = parse_url($url);
+    if ($parsed === false || empty($parsed['host'])) {
+        return null;
+    }
+    $port = isset($parsed['port']) && is_numeric($parsed['port'])
+        ? (int) $parsed['port']
+        : 5432;
+    $path = $parsed['path'] ?? '';
+    $database = ($path !== '/' && $path !== '')
+        ? ltrim(explode('?', $path)[0], '/')
+        : null;
+    return [
+        'host' => $parsed['host'],
+        'port' => $port,
+        'database' => $database,
+        'username' => $parsed['user'] ?? null,
+        'password' => $parsed['pass'] ?? null,
+    ];
+};
+
+$pgsqlUrlConfig = $pgsqlFromUrl();
+
 return [
 
 
@@ -66,12 +97,12 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'url' => $pgsqlUrlConfig ? null : env('DB_URL'),
+            'host' => $pgsqlUrlConfig['host'] ?? env('DB_HOST', '127.0.0.1'),
+            'port' => $pgsqlUrlConfig['port'] ?? env('DB_PORT', '5432'),
+            'database' => $pgsqlUrlConfig['database'] ?? env('DB_DATABASE', 'laravel'),
+            'username' => $pgsqlUrlConfig['username'] ?? env('DB_USERNAME', 'root'),
+            'password' => $pgsqlUrlConfig['password'] ?? env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
