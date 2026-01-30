@@ -27,8 +27,11 @@ RUN useradd -u ${USER_ID} -g www -m -s /bin/bash www || true
 # Criar diretório de trabalho
 WORKDIR /var/www/html
 
-# Copiar todo o código da aplicação primeiro
+# Copiar todo o código da aplicação
 COPY . .
+
+# Permissão de execução do script Railway como root (antes de chown/USER www)
+RUN chmod +x /var/www/html/railway/start.sh
 
 # Instalar dependências do PHP se composer.json existir
 # (Permite build mesmo sem Laravel instalado ainda)
@@ -41,21 +44,17 @@ RUN if [ -f "composer.json" ]; then \
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views \
     && mkdir -p bootstrap/cache
 
-# Ajustar permissões
+# Ajustar permissões (start.sh já está +x desde o RUN acima, como root)
 RUN chown -R www:www /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache || true
+    && chmod -R 775 /var/www/html/bootstrap/cache
 
 # Mudar para usuário www
 USER www
 
 # Expor porta 8000 (Railway usa variável PORT)
 EXPOSE 8000
-
-# Script de start para Railway (no dashboard: Start Command = sh railway/start.sh)
-COPY railway/start.sh /var/www/html/railway/start.sh
-RUN chmod +x /var/www/html/railway/start.sh
 
 # Comando padrão para docker-compose (nginx usa php-fpm na porta 9000)
 CMD ["php-fpm"]
