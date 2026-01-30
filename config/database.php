@@ -97,7 +97,7 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => $pgsqlUrlConfig ? null : env('DB_URL'),
+            'url' => null, // Nunca passar URL ao parser do Laravel (evita "port" inválido com DATABASE_URL no Railway)
             'host' => $pgsqlUrlConfig['host'] ?? env('DB_HOST', '127.0.0.1'),
             'port' => $pgsqlUrlConfig['port'] ?? env('DB_PORT', '5432'),
             'database' => $pgsqlUrlConfig['database'] ?? env('DB_DATABASE', 'laravel'),
