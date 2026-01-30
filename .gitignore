@@ -47,3 +47,4 @@ docker-compose.override.yml
 Docs/*
 Prompts/*
 laravel_temp_1769212757/*
+diff.md

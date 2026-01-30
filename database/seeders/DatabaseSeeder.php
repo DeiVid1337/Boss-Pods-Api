@@ -16,17 +16,18 @@ class DatabaseSeeder extends Seeder
     {
         $seeders = [];
 
-        if (app()->environment('production')) {
-            return;
-        } else {
-            if (config('boss_pods.seed.demo', true)) {
-                $seeders = [
-                    StoreSeeder::class,
-                    ProductSeeder::class,
-                    UserSeeder::class,
-                    StoreProductSeeder::class,
-                ];
-            }
+        if (config('boss_pods.seed.production')) {
+            $seeders = [
+                StoreSeeder::class,
+                UserSeeder::class,
+            ];
+        } elseif (config('boss_pods.seed.demo', true)) {
+            $seeders = [
+                StoreSeeder::class,
+                ProductSeeder::class,
+                UserSeeder::class,
+                StoreProductSeeder::class,
+            ];
         }
 
         $this->call($seeders);

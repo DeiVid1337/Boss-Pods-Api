@@ -13,11 +13,11 @@ class UserSeeder extends Seeder
 
     public function run(): void
     {
-        if (!config('boss_pods.seed.demo')) {
+        if (!config('boss_pods.seed.demo') && !config('boss_pods.seed.production')) {
             return;
         }
 
-        $adminPassword = config('boss_pods.seed.admin_password') 
+        $adminPassword = config('boss_pods.seed.admin_password')
             ?: config('boss_pods.seed.demo_password', 'password');
         $demoPassword = config('boss_pods.seed.demo_password', 'password');
 
@@ -46,27 +46,50 @@ class UserSeeder extends Seeder
         );
 
         $palmasStore = Store::where('name', 'Palmas')->first();
+        $guarujaStore = Store::where('name', 'Guarujá')->first();
+
         if ($palmasStore) {
             User::firstOrCreate(
-                ['email' => 'sayd@boss-pods.com'],
+                ['email' => 'gerente.palmas@boss-pods.com'],
                 [
-                    'name' => 'Sayd',
-                    'email' => 'sayd@boss-pods.com',
+                    'name' => 'Gerente Palmas',
+                    'email' => 'gerente.palmas@boss-pods.com',
                     'password' => $demoPassword,
                     'role' => 'manager',
                     'store_id' => $palmasStore->id,
                     'is_active' => true,
                 ]
             );
+            User::firstOrCreate(
+                ['email' => 'vendedor.palmas@boss-pods.com'],
+                [
+                    'name' => 'Vendedor Palmas',
+                    'email' => 'vendedor.palmas@boss-pods.com',
+                    'password' => $demoPassword,
+                    'role' => 'seller',
+                    'store_id' => $palmasStore->id,
+                    'is_active' => true,
+                ]
+            );
         }
 
-        $guarujaStore = Store::where('name', 'Guarujá')->first();
         if ($guarujaStore) {
             User::firstOrCreate(
-                ['email' => 'vendedor1@boss-pods.com'],
+                ['email' => 'gerente.guaruja@boss-pods.com'],
                 [
-                    'name' => 'Vendedor 1',
-                    'email' => 'vendedor1@boss-pods.com',
+                    'name' => 'Gerente Guarujá',
+                    'email' => 'gerente.guaruja@boss-pods.com',
+                    'password' => $demoPassword,
+                    'role' => 'manager',
+                    'store_id' => $guarujaStore->id,
+                    'is_active' => true,
+                ]
+            );
+            User::firstOrCreate(
+                ['email' => 'vendedor.guaruja@boss-pods.com'],
+                [
+                    'name' => 'Vendedor Guarujá',
+                    'email' => 'vendedor.guaruja@boss-pods.com',
                     'password' => $demoPassword,
                     'role' => 'seller',
                     'store_id' => $guarujaStore->id,
