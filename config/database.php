@@ -33,6 +33,15 @@ $pgsqlFromUrl = function (): ?array {
 
 $pgsqlUrlConfig = $pgsqlFromUrl();
 
+// Valores pgsql com fallback seguro (evita port/database vazios ou inválidos no Railway)
+$pgsqlFromParsed = is_array($pgsqlUrlConfig) ? $pgsqlUrlConfig : [];
+$pgsqlHost = env('DB_HOST') ?: ($pgsqlFromParsed['host'] ?? null) ?: '127.0.0.1';
+$pgsqlPortRaw = env('DB_PORT') ?: ($pgsqlFromParsed['port'] ?? null) ?: '5432';
+$pgsqlPort = (is_numeric($pgsqlPortRaw) && (int) $pgsqlPortRaw > 0) ? (int) $pgsqlPortRaw : 5432;
+$pgsqlDatabase = env('DB_DATABASE') ?: ($pgsqlFromParsed['database'] ?? null) ?: 'laravel';
+$pgsqlUsername = env('DB_USERNAME') ?: ($pgsqlFromParsed['username'] ?? null) ?: 'root';
+$pgsqlPassword = env('DB_PASSWORD') ?: ($pgsqlFromParsed['password'] ?? null) ?: '';
+
 return [
 
 
@@ -98,12 +107,11 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => null, // Nunca passar URL ao parser do Laravel (evita "port" inválido no Railway)
-            // Preferir variáveis explícitas (Railway: DB_HOST=${{Postgres.PGHOST}}, etc.) para evitar parse quebrado da DATABASE_URL
-            'host' => env('DB_HOST') ?? $pgsqlUrlConfig['host'] ?? '127.0.0.1',
-            'port' => env('DB_PORT') ?? $pgsqlUrlConfig['port'] ?? '5432',
-            'database' => env('DB_DATABASE') ?? $pgsqlUrlConfig['database'] ?? 'laravel',
-            'username' => env('DB_USERNAME') ?? $pgsqlUrlConfig['username'] ?? 'root',
-            'password' => env('DB_PASSWORD') ?? $pgsqlUrlConfig['password'] ?? '',
+            'host' => $pgsqlHost,
+            'port' => $pgsqlPort,
+            'database' => $pgsqlDatabase,
+            'username' => $pgsqlUsername,
+            'password' => $pgsqlPassword,
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
