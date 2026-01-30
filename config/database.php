@@ -97,12 +97,13 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => null, // Nunca passar URL ao parser do Laravel (evita "port" inválido com DATABASE_URL no Railway)
-            'host' => $pgsqlUrlConfig['host'] ?? env('DB_HOST', '127.0.0.1'),
-            'port' => $pgsqlUrlConfig['port'] ?? env('DB_PORT', '5432'),
-            'database' => $pgsqlUrlConfig['database'] ?? env('DB_DATABASE', 'laravel'),
-            'username' => $pgsqlUrlConfig['username'] ?? env('DB_USERNAME', 'root'),
-            'password' => $pgsqlUrlConfig['password'] ?? env('DB_PASSWORD', ''),
+            'url' => null, // Nunca passar URL ao parser do Laravel (evita "port" inválido no Railway)
+            // Preferir variáveis explícitas (Railway: DB_HOST=${{Postgres.PGHOST}}, etc.) para evitar parse quebrado da DATABASE_URL
+            'host' => env('DB_HOST') ?? $pgsqlUrlConfig['host'] ?? '127.0.0.1',
+            'port' => env('DB_PORT') ?? $pgsqlUrlConfig['port'] ?? '5432',
+            'database' => env('DB_DATABASE') ?? $pgsqlUrlConfig['database'] ?? 'laravel',
+            'username' => env('DB_USERNAME') ?? $pgsqlUrlConfig['username'] ?? 'root',
+            'password' => env('DB_PASSWORD') ?? $pgsqlUrlConfig['password'] ?? '',
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,

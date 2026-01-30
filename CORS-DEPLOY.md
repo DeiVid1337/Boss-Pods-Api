@@ -26,7 +26,20 @@ Assim o app escuta HTTP na porta que a Railway usa. **Não é necessário** conf
 
 ### 1.2 Banco (Postgres na Railway)
 
-A API usa **DATABASE_URL** ou **DB_URL** na Railway. O `config/database.php` faz o parse dessa URL de forma segura (host, port, database, user, password) para evitar o erro *"invalid integer value for connection option port"*. Pode manter a variável **DATABASE_URL** que a Railway injeta ao vincular o serviço Postgres; não é obrigatório definir DB_HOST, DB_PORT, etc. à mão.
+Para evitar o erro *"invalid integer value \"client_encoding='utf8'\" for connection option port"*, use **variáveis explícitas** no serviço da API:
+
+No serviço **Boss-Pods-Api** → **Variables**, adicione (referenciando o serviço Postgres):
+
+| Variável       | Valor (referência Railway)   |
+|----------------|------------------------------|
+| `DB_CONNECTION` | `pgsql`                      |
+| `DB_HOST`      | `${{Postgres.PGHOST}}`       |
+| `DB_PORT`      | `${{Postgres.PGPORT}}`       |
+| `DB_DATABASE`  | `${{Postgres.PGDATABASE}}`   |
+| `DB_USERNAME`  | `${{Postgres.PGUSER}}`       |
+| `DB_PASSWORD`  | `${{Postgres.PGPASSWORD}}`   |
+
+Assim a API usa host/port/banco/usuário/senha direto, sem parse da `DATABASE_URL`. A `DATABASE_URL` pode continuar definida; o Laravel prefere `DB_*` quando existem.
 
 ### 1.3 CORS no .env
 
