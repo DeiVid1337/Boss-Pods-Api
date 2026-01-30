@@ -50,8 +50,12 @@ RUN chown -R www:www /var/www/html \
 # Mudar para usuário www
 USER www
 
-# Expor porta 8000
+# Expor porta 8000 (Railway usa variável PORT)
 EXPOSE 8000
 
-# Comando padrão (pode ser sobrescrito no docker-compose)
+# Script de start para Railway (no dashboard: Start Command = sh railway/start.sh)
+COPY railway/start.sh /var/www/html/railway/start.sh
+RUN chmod +x /var/www/html/railway/start.sh
+
+# Comando padrão para docker-compose (nginx usa php-fpm na porta 9000)
 CMD ["php-fpm"]
