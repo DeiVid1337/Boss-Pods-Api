@@ -102,22 +102,32 @@ class StoreProductService
         $data['min_stock_level'] = $data['min_stock_level'] ?? 0;
         $data['is_active'] = $data['is_active'] ?? true;
 
-        try {
-            $storeProduct = StoreProduct::create($data);
-            $storeProduct->load('product');
+        // Se existir registro soft-deleted com mesmo store+product, restaura e atualiza (evita erro de unique no banco)
+        $existing = StoreProduct::withTrashed()
+            ->where('store_id', $store->id)
+            ->where('product_id', $data['product_id'])
+            ->first();
 
-            return $storeProduct;
-        } catch (QueryException $e) {
-            $errorCode = $e->getCode();
-            $errorMessage = $e->getMessage();
-
-            if ($errorCode === '23000' || $errorCode === '23505' ||
-                str_contains($errorMessage, 'unique constraint') ||
-                str_contains($errorMessage, 'duplicate key value')) {
+        if ($existing) {
+            if (!$existing->trashed()) {
                 throw new RuntimeException('Product already in store inventory.', 422);
             }
-            throw $e;
+            $existing->restore();
+            $existing->update([
+                'cost_price' => $data['cost_price'],
+                'sale_price' => $data['sale_price'],
+                'stock_quantity' => $data['stock_quantity'],
+                'min_stock_level' => $data['min_stock_level'],
+                'is_active' => $data['is_active'],
+            ]);
+            $existing->load('product');
+            return $existing;
         }
+
+        $storeProduct = StoreProduct::create($data);
+        $storeProduct->load('product');
+
+        return $storeProduct;
     }
 
 
